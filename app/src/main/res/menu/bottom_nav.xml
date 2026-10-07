@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_home"
+        android:title="Home" />
+    <item
+        android:id="@+id/nav_rooms"
+        android:icon="@drawable/ic_bed"
+        android:title="Rooms" />
+    <item
+        android:id="@+id/nav_guests"
+        android:icon="@drawable/ic_people"
+        android:title="Guests" />
+    <item
+        android:id="@+id/nav_cabs"
+        android:icon="@drawable/ic_car"
+        android:title="Cabs" />
+    <item
+        android:id="@+id/nav_more"
+        android:icon="@drawable/ic_grid"
+        android:title="More" />
+</menu>

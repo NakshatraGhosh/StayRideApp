@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_primary">#FF8B5CF6</color>
+    <color name="brand_primary_dark">#FF5B21B6</color>
+    <color name="brand_primary_light">#FFEDE9FE</color>
+    <color name="brand_accent">#FFFBBF24</color>
+    <color name="brand_accent_light">#FFFFF7E0</color>
+
+    <color name="bg_page">#FFF7F5FF</color>
+    <color name="bg_card">#FFFFFFFF</color>
+    <color name="text_primary">#FF1E1B2E</color>
+    <color name="text_secondary">#FF6E6A80</color>
+    <color name="divider">#FFECE9F5</color>
+    <color name="icon_default">#FF6E6A80</color>
+
+    <color name="status_green">#FF16A34A</color>
+    <color name="status_green_bg">#FFDCFCE7</color>
+    <color name="status_blue">#FF2D6CDF</color>
+    <color name="status_blue_bg">#FFE4EDFF</color>
+    <color name="status_orange">#FFE07B00</color>
+    <color name="status_orange_bg">#FFFDEFDC</color>
+    <color name="status_red">#FFDC2626</color>
+    <color name="status_red_bg">#FFFEE2E2</color>
+    <color name="status_purple">#FF7A4DD1</color>
+    <color name="status_purple_bg">#FFEFE7FF</color>
+    <color name="status_grey">#FF6E6A80</color>
+    <color name="status_grey_bg">#FFF1EFF7</color>
+
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF8B5CF6</color>
+    <color name="purple_700">#FF5B21B6</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
