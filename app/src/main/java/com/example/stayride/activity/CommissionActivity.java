@@ -37,21 +37,24 @@ public class CommissionActivity extends BaseActivity {
         b.list.setLayoutManager(new LinearLayoutManager(this));
         b.list.setAdapter(adapter);
         adapter.onToggle = trip -> {
-            trip.commissionPaid = !trip.commissionPaid;
-            Ui.toast(this, trip.commissionPaid
-                    ? "Marked as paid \u2014 " + Ui.money(trip.commission)
-                    : "Moved back to pending \u2014 " + Ui.money(trip.commission));
-            refresh();
+            boolean paid = !trip.commissionPaid;
+            DataStore.get().payCommission(trip.id, paid, () -> {
+                Ui.toast(this, paid
+                        ? "Marked as paid \u2014 " + Ui.money(trip.commission)
+                        : "Moved back to pending \u2014 " + Ui.money(trip.commission));
+                refresh();
+            });
         };
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         b.balance.setText(Ui.money(d.commissionPending()));
         b.summary.setText("Earned " + Ui.money(d.commissionEarned()) + " \u00B7 Paid "

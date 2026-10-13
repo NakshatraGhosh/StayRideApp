@@ -10,6 +10,9 @@ if (keystorePropsFile.exists()) {
     keystorePropsFile.withInputStream { keystoreProps.load(it) }
 }
 
+// Backend URL, overridable from gradle.properties (see stayride.baseUrl).
+def stayrideBaseUrl = project.findProperty('stayride.baseUrl') ?: 'http://10.0.2.2:8080/v1'
+
 android {
     namespace 'com.example.stayride'
     compileSdk 34
@@ -22,6 +25,8 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "BASE_URL", "\"${stayrideBaseUrl}\""
     }
 
     signingConfigs {
@@ -46,6 +51,7 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8

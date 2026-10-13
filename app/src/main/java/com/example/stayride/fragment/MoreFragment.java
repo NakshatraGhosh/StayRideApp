@@ -37,11 +37,24 @@ public class MoreFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        b.btnOpenProfile.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), HomestayProfileActivity.class)));
+        refresh();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        DataStore.get().sync(this::refresh);
+    }
+
+    private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         b.profileName.setText(d.homestay.name);
         b.profileLink.setText(d.homestay.link.replace("https://", ""));
-        b.btnOpenProfile.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), HomestayProfileActivity.class)));
+        b.rowsTop.removeAllViews();
+        b.rowsBottom.removeAllViews();
 
         addRow(b.rowsTop, R.drawable.ic_chart, "Analytics",
                 "Property, guest and cab performance",
@@ -106,9 +119,11 @@ public class MoreFragment extends Fragment {
                 .setTitle("Reset demo data?")
                 .setMessage("All bookings, guests, drivers and cab requests you created will be replaced with the original demo dataset.")
                 .setPositiveButton("Reset", (dialog, which) -> {
-                    DataStore.reset();
-                    Ui.toast(requireContext(), "Demo data restored");
-                    onViewCreated(getView(), null);
+                    DataStore.get().resetDemo(() -> {
+                        if (b == null) return;
+                        Ui.toast(requireContext(), "Demo data restored");
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

@@ -47,11 +47,14 @@ public class GuestDetailActivity extends BaseActivity {
                 startActivity(new Intent(this, NewBookingActivity.class).putExtra("guest_id", guest.id)));
         b.btnEditNotes.setOnClickListener(v -> editNotes());
         b.consentSwitch.setOnCheckedChangeListener((btn, checked) -> {
-            guest.marketingConsent = checked;
-            Ui.toast(this, checked
-                    ? guest.name + " can receive WhatsApp offers"
-                    : guest.name + " will not receive marketing messages");
-            refresh();
+            if (guest.marketingConsent == checked) return;
+            DataStore.get().updateGuest(guest.id, guest.name, guest.phone, guest.email, guest.notes,
+                    checked, () -> {
+                        Ui.toast(this, checked
+                                ? guest.name + " can receive WhatsApp offers"
+                                : guest.name + " will not receive marketing messages");
+                        refresh();
+                    });
         });
     }
 
@@ -82,11 +85,14 @@ public class GuestDetailActivity extends BaseActivity {
         b.consentSwitch.setOnCheckedChangeListener(null);
         b.consentSwitch.setChecked(guest.marketingConsent);
         b.consentSwitch.setOnCheckedChangeListener((btn, checked) -> {
-            guest.marketingConsent = checked;
-            Ui.toast(this, checked
-                    ? guest.name + " can receive WhatsApp offers"
-                    : guest.name + " will not receive marketing messages");
-            refresh();
+            if (guest.marketingConsent == checked) return;
+            DataStore.get().updateGuest(guest.id, guest.name, guest.phone, guest.email, guest.notes,
+                    checked, () -> {
+                        Ui.toast(this, checked
+                                ? guest.name + " can receive WhatsApp offers"
+                                : guest.name + " will not receive marketing messages");
+                        refresh();
+                    });
         });
 
         if (guest.isRepeat()) {
@@ -136,9 +142,12 @@ public class GuestDetailActivity extends BaseActivity {
                 .setTitle("Notes for " + guest.name)
                 .setView(input)
                 .setPositiveButton("Save", (dialog, which) -> {
-                    guest.notes = input.getText().toString().trim();
-                    Ui.toast(this, "Notes saved");
-                    refresh();
+                    String notes = input.getText().toString().trim();
+                    DataStore.get().updateGuest(guest.id, guest.name, guest.phone, guest.email, notes,
+                            guest.marketingConsent, () -> {
+                                Ui.toast(this, "Notes saved");
+                                refresh();
+                            });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

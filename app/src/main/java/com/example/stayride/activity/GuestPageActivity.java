@@ -100,11 +100,12 @@ public class GuestPageActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
         updateEstimate();
     }
 
     private void refresh() {
+        if (b == null) return;
         Models.Homestay h = DataStore.get().homestay;
         b.toolbar.setTitle(h.name);
         b.guestName.setText(h.name);
@@ -194,33 +195,32 @@ public class GuestPageActivity extends BaseActivity {
             return;
         }
 
-        DataStore d = DataStore.get();
-        Models.CabTrip trip = new Models.CabTrip(d.nextTripId++);
-        trip.guestName = name;
-        trip.phone = phone;
-        trip.pickup = text(b.editPickup.getText());
-        trip.destination = text(b.editDestination.getText());
-        trip.date = Dates.today() + dateOffset(text(b.editDate.getText()));
-        trip.time = text(b.editTime.getText());
+        String pickup = text(b.editPickup.getText());
+        String destination = text(b.editDestination.getText());
+        long date = Dates.plusDays(dateOffset(text(b.editDate.getText())));
+        String time = text(b.editTime.getText());
+        int passengers;
         try {
-            trip.passengers = Integer.parseInt(text(b.editPassengers.getText()));
+            passengers = Integer.parseInt(text(b.editPassengers.getText()));
         } catch (NumberFormatException e) {
-            trip.passengers = 2;
+            passengers = 2;
         }
-        trip.vehicleType = text(b.editVehicleType.getText());
-        trip.estFare = baseFare(trip.vehicleType);
-        trip.status = "NEW_REQUEST";
-        d.trips.add(0, trip);
+        String vehicleType = text(b.editVehicleType.getText());
         lastPhone = phone;
 
-        refresh();
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Cab request sent!")
-                .setMessage("Your request for a " + trip.vehicleType + " on "
-                        + Dates.fmt(trip.date) + " at " + trip.time + " has reached "
-                        + "Mountain View Homestay. You will get a call once a driver is assigned.")
-                .setPositiveButton("Done", null)
-                .show();
+        DataStore.get().createTrip(name, phone, pickup, destination, date, time, passengers,
+                vehicleType, () -> {
+                    if (b == null) return;
+                    refresh();
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle("Cab request sent!")
+                            .setMessage("Your request for a " + vehicleType + " on "
+                                    + Dates.fmt(date) + " at " + time + " has reached "
+                                    + DataStore.get().homestay.name
+                                    + ". You will get a call once a driver is assigned.")
+                            .setPositiveButton("Done", null)
+                            .show();
+                });
     }
 
     private int dateOffset(String label) {

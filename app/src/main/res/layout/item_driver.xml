@@ -107,6 +107,17 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
+            <TextView
+                android:id="@+id/distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="2.3 km away"
+                android:textColor="@color/brand_primary_dark"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
             <Switch
                 android:id="@+id/activeSwitch"
                 android:layout_width="wrap_content"
@@ -132,11 +143,34 @@
                 android:textColor="@color/brand_primary_dark"
                 android:textSize="12sp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBook"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Book now"
+                android:textSize="12sp"
+                app:cornerRadius="10dp" />
+
+            <ImageView
+                android:id="@+id/btnCall"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Call driver"
+                android:padding="6dp"
+                android:src="@drawable/ic_phone"
+                app:tint="@color/brand_primary" />
+
             <ImageView
                 android:id="@+id/btnEdit"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Edit driver"
                 android:padding="6dp"
                 android:src="@drawable/ic_edit"

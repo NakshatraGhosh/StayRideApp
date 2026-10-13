@@ -60,10 +60,11 @@ public class HomestayProfileActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         Models.Homestay h = DataStore.get().homestay;
         b.name.setText(h.name);
         b.location.setText(h.location);
@@ -84,7 +85,7 @@ public class HomestayProfileActivity extends BaseActivity {
             chip.setCloseIconResource(R.drawable.ic_close);
             chip.setOnCloseIconClickListener(v -> {
                 h.photos.remove(photo);
-                renderPhotos(h);
+                persist(h);
             });
             b.photoRow.addView(chip);
         }
@@ -107,7 +108,7 @@ public class HomestayProfileActivity extends BaseActivity {
                 .setTitle("Add photo")
                 .setItems(remaining.toArray(new String[0]), (dialog, which) -> {
                     h.photos.add(remaining.get(which));
-                    renderPhotos(h);
+                    persist(h);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -122,7 +123,7 @@ public class HomestayProfileActivity extends BaseActivity {
             chip.setCloseIconResource(R.drawable.ic_close);
             chip.setOnCloseIconClickListener(v -> {
                 h.amenities.remove(amenity);
-                renderAmenities(h);
+                persist(h);
             });
             b.amenities.addView(chip);
         }
@@ -145,7 +146,7 @@ public class HomestayProfileActivity extends BaseActivity {
                 .setTitle("Add amenity")
                 .setItems(remaining.toArray(new String[0]), (dialog, which) -> {
                     h.amenities.add(remaining.get(which));
-                    renderAmenities(h);
+                    persist(h);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -175,11 +176,18 @@ public class HomestayProfileActivity extends BaseActivity {
                     h.email = text(f.editEmail.getText());
                     h.location = text(f.editLocation.getText());
                     h.description = text(f.editDescription.getText());
-                    Ui.toast(this, "Profile updated");
-                    refresh();
+                    persist(h);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void persist(Models.Homestay h) {
+        DataStore.get().updateHomestay(h, () -> {
+            if (b == null) return;
+            Ui.toast(this, "Profile updated");
+            refresh();
+        });
     }
 
     private void copyLink() {

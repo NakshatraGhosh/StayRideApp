@@ -54,9 +54,16 @@ public class MyDriversActivity extends BaseActivity {
 
             @Override
             public void onActiveChanged(Models.Driver driver, boolean active) {
-                driver.active = active;
-                Ui.toast(MyDriversActivity.this, driver.name + (active ? " activated" : " deactivated"));
-                refresh();
+                DataStore.get().setDriverActive(driver.id, active, () -> {
+                    Ui.toast(MyDriversActivity.this, driver.name + (active ? " activated" : " deactivated"));
+                    refresh();
+                });
+            }
+
+            @Override
+            public void onBook(Models.Driver driver) {
+                com.example.stayride.util.DriverBooking.start(
+                        MyDriversActivity.this, driver, DataStore.get().homestay.name);
             }
         });
 
@@ -66,10 +73,11 @@ public class MyDriversActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         adapter.submit(d.drivers);
         int active = 0;
@@ -146,33 +154,23 @@ public class MyDriversActivity extends BaseActivity {
         if (type.isEmpty()) type = "SUV";
         String area = text(f.editArea.getText());
 
+        boolean available = f.availableCheck.isChecked();
         DataStore d = DataStore.get();
         if (existing == null) {
-            Models.Driver driver = new Models.Driver(d.nextDriverId++, name);
-            driver.phone = phone;
-            driver.vehicle = vehicle;
-            driver.vehicleType = type;
-            driver.seats = seats;
-            driver.area = area.isEmpty() ? "Gangtok" : area;
-            driver.trips = trips;
-            driver.available = f.availableCheck.isChecked();
-            driver.active = true;
-            driver.ownerDriver = true;
-            driver.rating = 4.5f;
-            d.drivers.add(driver);
-            Ui.toast(this, name + " added to your driver team");
+            d.createDriver(name, phone, vehicle, type, seats, 4.5f,
+                    area.isEmpty() ? "Gangtok" : area, trips, () -> {
+                        if (b == null) return;
+                        Ui.toast(this, name + " added to your driver team");
+                        refresh();
+                    });
         } else {
-            existing.name = name;
-            existing.phone = phone;
-            existing.vehicle = vehicle;
-            existing.vehicleType = type;
-            existing.seats = seats;
-            existing.area = area;
-            existing.trips = trips;
-            existing.available = f.availableCheck.isChecked();
-            Ui.toast(this, name + " updated");
+            d.updateDriver(existing.id, name, phone, vehicle, type, seats, existing.rating, area, trips, () ->
+                    d.setDriverAvailability(existing.id, available, () -> {
+                        if (b == null) return;
+                        Ui.toast(this, name + " updated");
+                        refresh();
+                    }));
         }
-        refresh();
     }
 
     private void confirmDelete(Models.Driver driver) {
@@ -180,9 +178,11 @@ public class MyDriversActivity extends BaseActivity {
                 .setTitle("Remove " + driver.name + "?")
                 .setMessage("He will no longer be offered to guests for cab bookings.")
                 .setPositiveButton("Remove", (dialog, which) -> {
-                    DataStore.get().drivers.remove(driver);
-                    Ui.toast(this, driver.name + " removed");
-                    refresh();
+                    DataStore.get().deleteDriver(driver.id, () -> {
+                        if (b == null) return;
+                        Ui.toast(this, driver.name + " removed");
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

@@ -57,31 +57,20 @@ public class NewGuestActivity extends BaseActivity {
         }
 
         DataStore d = DataStore.get();
+        String email = text(b.editEmail.getText());
+        String notes = text(b.editNotes.getText());
+        boolean consent = b.consent.isChecked();
         if (editing == null) {
-            Models.Guest g = new Models.Guest(d.nextGuestId++, name, phone, text(b.editEmail.getText()));
-            g.notes = text(b.editNotes.getText());
-            g.marketingConsent = b.consent.isChecked();
-            g.visits = 0;
-            g.totalSpending = 0;
-            g.lastVisit = Dates.today();
-            g.firstVisit = Dates.today();
-            d.guests.add(g);
-            Ui.toast(this, name + " added to guest database");
+            d.createGuest(name, phone, email, notes, consent, () -> {
+                Ui.toast(this, name + " added to guest database");
+                finish();
+            });
         } else {
-            editing.name = name;
-            editing.phone = phone;
-            editing.email = text(b.editEmail.getText());
-            editing.notes = text(b.editNotes.getText());
-            editing.marketingConsent = b.consent.isChecked();
-            Ui.toast(this, "Guest updated");
-            DataStore.get().bookings.forEach(bk -> {
-                if (bk.guestId == editing.id) {
-                    bk.guestName = editing.name;
-                    bk.phone = editing.phone;
-                }
+            d.updateGuest(editing.id, name, phone, email, notes, consent, () -> {
+                Ui.toast(this, "Guest updated");
+                finish();
             });
         }
-        finish();
     }
 
     private String text(CharSequence cs) {

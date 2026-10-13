@@ -35,10 +35,11 @@ public class AnalyticsActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         long cutoff = Dates.today() - 30 * Dates.DAY;
 

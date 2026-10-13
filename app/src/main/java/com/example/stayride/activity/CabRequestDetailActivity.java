@@ -31,6 +31,7 @@ public class CabRequestDetailActivity extends BaseActivity {
     private Models.CabTrip trip;
     private int tripId;
     private String searchMode = "idle";
+    private String overrideStatus;
     private Runnable pending;
 
     @Override
@@ -62,6 +63,10 @@ public class CabRequestDetailActivity extends BaseActivity {
         b = null;
     }
 
+    private String status() {
+        return overrideStatus != null ? overrideStatus : trip.status;
+    }
+
     private void refresh() {
         if (b == null) return;
         trip = DataStore.get().trip(tripId);
@@ -69,6 +74,7 @@ public class CabRequestDetailActivity extends BaseActivity {
             finish();
             return;
         }
+        String status = status();
 
         b.guestName.setText(trip.guestName);
         b.phone.setText(trip.phone);
@@ -84,10 +90,10 @@ public class CabRequestDetailActivity extends BaseActivity {
         b.driverTag.setText(trip.driverName == null
                 ? "No driver assigned"
                 : trip.driverName + (trip.ownerDriver ? " (your driver)" : " (StayRide)"));
-        Ui.styleTripStatus(b.status, trip.status);
+        Ui.styleTripStatus(b.status, status);
 
-        int step = stepOf(trip.status);
-        b.stepLabel.setText("Step " + Math.max(step, 1) + " of 6 \u00B7 " + Ui.tripStatusLabel(trip.status));
+        int step = stepOf(status);
+        b.stepLabel.setText("Step " + Math.max(step, 1) + " of 6 \u00B7 " + Ui.tripStatusLabel(status));
         b.progress.setProgress(Math.max(step, 1) * 100 / 6);
 
         renderDriverCard();
@@ -137,25 +143,26 @@ public class CabRequestDetailActivity extends BaseActivity {
 
     private void renderSearchArea() {
         b.driversList.removeAllViews();
-        if (!"FINDING_DRIVER".equals(trip.status)) {
+        String status = status();
+        if (!"FINDING_DRIVER".equals(status)) {
             b.searchLabel.setVisibility(View.GONE);
-            if (!"COMPLETED".equals(trip.status) && !"CANCELLED".equals(trip.status)) {
+            if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
                 banner("Accept the request to start finding a driver.",
                         R.color.brand_primary_light, R.color.brand_primary_dark);
             } else {
                 b.banner.setVisibility(View.GONE);
             }
-            if ("DRIVER_ASSIGNED".equals(trip.status)
-                    || "CONFIRMED".equals(trip.status)
-                    || "TRIP_STARTED".equals(trip.status)) {
+            if ("DRIVER_ASSIGNED".equals(status)
+                    || "CONFIRMED".equals(status)
+                    || "TRIP_STARTED".equals(status)) {
                 banner("Driver assigned \u00B7 guest confirmation is simulated in this demo.",
                         R.color.status_blue_bg, R.color.status_blue);
             }
-            if ("COMPLETED".equals(trip.status)) {
+            if ("COMPLETED".equals(status)) {
                 banner("Trip completed. Your commission has been added below.",
                         R.color.status_green_bg, R.color.status_green);
             }
-            if ("CANCELLED".equals(trip.status)) {
+            if ("CANCELLED".equals(status)) {
                 banner("This request was cancelled.", R.color.status_red_bg, R.color.status_red);
             }
             return;
@@ -219,7 +226,7 @@ public class CabRequestDetailActivity extends BaseActivity {
 
     private void renderActions() {
         b.actions.removeAllViews();
-        switch (trip.status) {
+        switch (status()) {
             case "NEW_REQUEST":
                 add("Accept / Find Driver", false, this::accept);
                 add("Decline request", true, this::confirmDecline);
@@ -236,11 +243,7 @@ public class CabRequestDetailActivity extends BaseActivity {
                 break;
             case "DRIVER_ASSIGNED":
                 add("Confirm booking", false, this::confirmBooking);
-                add("Change driver", true, () -> {
-                    trip.driverId = null;
-                    trip.driverName = null;
-                    beginOwnSearch();
-                });
+                add("Change driver", true, this::changeDriver);
                 add("Cancel request", true, this::confirmCancel);
                 break;
             case "CONFIRMED":
@@ -280,8 +283,15 @@ public class CabRequestDetailActivity extends BaseActivity {
     }
 
     private void accept() {
-        trip.status = "FINDING_DRIVER";
+        overrideStatus = "FINDING_DRIVER";
         beginOwnSearch();
+    }
+
+    private void changeDriver() {
+        DataStore.get().reassignTrip(tripId, () -> {
+            overrideStatus = null;
+            beginOwnSearch();
+        });
     }
 
     private void beginOwnSearch() {
@@ -314,41 +324,40 @@ public class CabRequestDetailActivity extends BaseActivity {
     }
 
     private void assignDriver(Models.Driver driver, boolean own) {
-        trip.driverId = driver.id;
-        trip.driverName = driver.name;
-        trip.ownerDriver = own && driver.ownerDriver;
-        trip.status = "DRIVER_ASSIGNED";
-        searchMode = "idle";
-        Ui.toast(this, driver.name + " assigned to " + trip.guestName);
-        refresh();
+        DataStore.get().assignTripDriver(tripId, driver.id, () -> {
+            overrideStatus = null;
+            searchMode = "idle";
+            Ui.toast(this, driver.name + " assigned to " + trip.guestName);
+            refresh();
+        });
     }
 
     private void confirmBooking() {
-        trip.status = "CONFIRMED";
-        refresh();
-        if (b != null) {
-            Snackbar.make(b.getRoot(), "Confirmation sent to " + trip.guestName + " (simulated)",
-                    Snackbar.LENGTH_LONG).show();
-        }
+        DataStore.get().acceptTrip(tripId, () -> {
+            refresh();
+            if (b != null) {
+                Snackbar.make(b.getRoot(), "Confirmation sent to " + trip.guestName + " (simulated)",
+                        Snackbar.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void startTrip() {
-        trip.status = "TRIP_STARTED";
-        Ui.toast(this, "Trip started \u2014 driver notified (demo)");
-        refresh();
+        DataStore.get().startTrip(tripId, () -> {
+            Ui.toast(this, "Trip started \u2014 driver notified (demo)");
+            refresh();
+        });
     }
 
     private void completeTrip() {
-        trip.status = "COMPLETED";
-        trip.fare = trip.estFare;
-        trip.commission = Math.max(1, trip.fare * 12 / 100);
-        trip.commissionPaid = false;
-        refresh();
-        Ui.toast(this, "Commission Earned: " + Ui.money(trip.commission));
+        DataStore.get().completeTrip(tripId, () -> {
+            refresh();
+            Ui.toast(this, "Commission Earned: " + Ui.money(trip.commission));
+        });
     }
 
     private void cancelSearch() {
-        trip.status = "NEW_REQUEST";
+        overrideStatus = null;
         searchMode = "idle";
         refresh();
     }
@@ -358,10 +367,12 @@ public class CabRequestDetailActivity extends BaseActivity {
                 .setTitle("Decline this request?")
                 .setMessage(trip.guestName + " will be told that no cab is available right now (demo).")
                 .setPositiveButton("Decline", (dialog, which) -> {
-                    trip.status = "CANCELLED";
-                    searchMode = "idle";
-                    refresh();
-                    Ui.toast(this, "Request declined");
+                    DataStore.get().cancelTrip(tripId, () -> {
+                        overrideStatus = null;
+                        searchMode = "idle";
+                        Ui.toast(this, "Request declined");
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Keep request", null)
                 .show();
@@ -372,10 +383,12 @@ public class CabRequestDetailActivity extends BaseActivity {
                 .setTitle("Cancel this cab request?")
                 .setMessage("The guest will be notified that no cab could be arranged (simulated).")
                 .setPositiveButton("Cancel request", (dialog, which) -> {
-                    trip.status = "CANCELLED";
-                    searchMode = "idle";
-                    refresh();
-                    Ui.toast(this, "Request cancelled");
+                    DataStore.get().cancelTrip(tripId, () -> {
+                        overrideStatus = null;
+                        searchMode = "idle";
+                        Ui.toast(this, "Request cancelled");
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Keep request", null)
                 .show();

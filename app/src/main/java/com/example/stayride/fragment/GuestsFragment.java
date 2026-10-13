@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -26,6 +27,7 @@ public class GuestsFragment extends Fragment {
     private final GuestAdapter adapter = new GuestAdapter();
     private String query = "";
     private String filter = "ALL";
+    private int periodDays = 0;
 
     @Nullable
     @Override
@@ -64,20 +66,55 @@ public class GuestsFragment extends Fragment {
         b.fNew.setOnClickListener(v -> { filter = "NEW"; refresh(); });
         b.fRepeat.setOnClickListener(v -> { filter = "REPEAT"; refresh(); });
 
+        b.periodFilter.setText(periodLabel(periodDays));
+        b.periodFilter.setOnClickListener(this::showPeriodMenu);
+
         b.fab.setOnClickListener(v -> startActivity(new Intent(requireContext(), NewGuestActivity.class)));
+    }
+
+    private void showPeriodMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(requireContext(), anchor);
+        menu.getMenuInflater().inflate(R.menu.menu_guest_period, menu.getMenu());
+        int checkId = periodDays == 7 ? R.id.g7
+                : periodDays == 30 ? R.id.g30
+                : periodDays == 180 ? R.id.g180
+                : periodDays == 365 ? R.id.g365 : R.id.gAll;
+        menu.getMenu().findItem(checkId).setChecked(true);
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.g7) periodDays = 7;
+            else if (item.getItemId() == R.id.g30) periodDays = 30;
+            else if (item.getItemId() == R.id.g180) periodDays = 180;
+            else if (item.getItemId() == R.id.g365) periodDays = 365;
+            else periodDays = 0;
+            if (b != null) b.periodFilter.setText(periodLabel(periodDays));
+            refresh();
+            return true;
+        });
+        menu.show();
+    }
+
+    private String periodLabel(int days) {
+        switch (days) {
+            case 7: return "Last 7 days";
+            case 30: return "Last 30 days";
+            case 180: return "Last 6 months";
+            case 365: return "Last 1 year";
+            default: return "All time";
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
-        adapter.submit(d.searchGuests(query, filter));
-        b.count.setText(d.guests.size() + " guests \u00B7 " + d.countGuests(true) + " repeat \u00B7 "
-                + d.countGuests(false) + " new");
+        adapter.submit(d.searchGuests(query, filter, periodDays));
+        b.count.setText(adapter.getItemCount() + " showing \u00B7 " + d.guests.size() + " guests \u00B7 "
+                + d.countGuests(true) + " repeat \u00B7 " + d.countGuests(false) + " new");
         b.empty.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
     }
 

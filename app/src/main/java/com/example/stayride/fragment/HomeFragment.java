@@ -124,13 +124,18 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         b.headerTitle.setText(d.homestay.name);
-        b.headerSub.setText("Owner dashboard \u00B7 " + d.homestay.location.split(",")[0]);
+        b.headerSub.setText(d.homestay.location.split(",")[0]);
+        b.heroGreeting.setText(greeting() + ", " + d.homestay.ownerName.split(" ")[0]);
+        b.heroTagline.setText(tagline());
+        b.heroRating.setText(String.format(java.util.Locale.getDefault(), "%.1f \u00B7 %d stays",
+                4.9f, d.totalBookings()));
 
         List<Stat> stats = new ArrayList<>();
         stats.add(new Stat(R.drawable.ic_calendar, String.valueOf(d.todayBookings().size()), "Today's bookings",
@@ -173,6 +178,24 @@ public class HomeFragment extends Fragment {
         upcomingAdapter.submit(d.upcomingCheckIns(3));
         tripAdapter.submit(d.recentTrips(3));
         renderChart();
+    }
+
+    private String greeting() {
+        int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+        if (hour < 12) return "Good morning";
+        if (hour < 17) return "Good afternoon";
+        return "Good evening";
+    }
+
+    private String tagline() {
+        String[] lines = {
+                "Cosy stays in the clouds. Mountain cabs, zero hassle.",
+                "Where warm hospitality meets Himalayan views.",
+                "Your home above MG Marg, with wheels on standby.",
+                "Rest easy. We handle the mountains and the miles."
+        };
+        int day = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR);
+        return lines[day % lines.length];
     }
 
     private void openBooking(Models.Booking booking) {

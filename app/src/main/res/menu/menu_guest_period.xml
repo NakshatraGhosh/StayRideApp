@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item android:id="@+id/gAll" android:title="All time" />
+        <item android:id="@+id/g7" android:title="Last 7 days" />
+        <item android:id="@+id/g30" android:title="Last 30 days" />
+        <item android:id="@+id/g180" android:title="Last 6 months" />
+        <item android:id="@+id/g365" android:title="Last 1 year" />
+    </group>
+</menu>

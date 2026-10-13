@@ -147,23 +147,10 @@ public class BookingDetailActivity extends BaseActivity {
                 .setTitle("Assign a room")
                 .setSingleChoiceItems(numbers, checked, (dialog, which) -> {
                     Models.Room room = store.rooms.get(which);
-                    Models.Room previous = null;
-                    for (Models.Room r : store.rooms) {
-                        if (r.number.equals(booking.roomNumber)) previous = r;
-                    }
-                    booking.roomNumber = room.number;
-                    if ("AVAILABLE".equals(room.status) && !"CHECKED_IN".equals(booking.status)) {
-                        room.status = "RESERVED";
-                    }
-                    if ("CHECKED_IN".equals(booking.status)) {
-                        room.status = "OCCUPIED";
-                    }
-                    if (previous != null && !previous.number.equals(room.number)
-                            && "RESERVED".equals(previous.status)) {
-                        previous.status = "AVAILABLE";
-                    }
-                    Ui.toast(this, "Room " + room.number + " assigned");
-                    refresh();
+                    store.changeBookingRoom(booking.id, room.number, () -> {
+                        Ui.toast(this, "Room " + room.number + " assigned");
+                        refresh();
+                    });
                     dialog.dismiss();
                 })
                 .setNegativeButton("Cancel", null)
@@ -175,12 +162,10 @@ public class BookingDetailActivity extends BaseActivity {
                 .setTitle("Check in " + booking.guestName + "?")
                 .setMessage("Room " + booking.roomNumber + " will be marked occupied and the guest will be checked in.")
                 .setPositiveButton("Check in", (dialog, which) -> {
-                    booking.status = "CHECKED_IN";
-                    for (Models.Room r : DataStore.get().rooms) {
-                        if (r.number.equals(booking.roomNumber)) r.status = "OCCUPIED";
-                    }
-                    Ui.toast(this, booking.guestName + " checked in to room " + booking.roomNumber);
-                    refresh();
+                    DataStore.get().checkIn(booking.id, () -> {
+                        Ui.toast(this, booking.guestName + " checked in to room " + booking.roomNumber);
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -191,30 +176,20 @@ public class BookingDetailActivity extends BaseActivity {
                 .setTitle("Check out " + booking.guestName + "?")
                 .setMessage("The stay will be closed and the room will become available again.")
                 .setPositiveButton("Check out", (dialog, which) -> {
-                    booking.status = "CHECKED_OUT";
-                    for (Models.Room r : DataStore.get().rooms) {
-                        if (r.number.equals(booking.roomNumber) && "OCCUPIED".equals(r.status)) {
-                            r.status = "AVAILABLE";
-                        }
-                    }
-                    Models.Guest guest = DataStore.get().guest(booking.guestId);
-                    if (guest != null) {
-                        guest.visits += 1;
-                        guest.totalSpending += booking.amount;
-                        guest.lastVisit = booking.checkOut < Dates.today() ? booking.checkOut : Dates.today();
-                        if (guest.firstVisit == 0) guest.firstVisit = booking.checkIn;
-                    }
-                    Ui.toast(this, booking.guestName + " checked out");
-                    refresh();
+                    DataStore.get().checkOut(booking.id, () -> {
+                        Ui.toast(this, booking.guestName + " checked out");
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
     private void markPaid() {
-        booking.paid = true;
-        Ui.toast(this, "Payment of " + Ui.money(booking.amount) + " marked as paid");
-        refresh();
+        DataStore.get().setBookingPaid(booking.id, true, () -> {
+            Ui.toast(this, "Payment of " + Ui.money(booking.amount) + " marked as paid");
+            refresh();
+        });
     }
 
     private void confirmCancel() {
@@ -222,15 +197,10 @@ public class BookingDetailActivity extends BaseActivity {
                 .setTitle("Cancel this booking?")
                 .setMessage("Room " + booking.roomNumber + " will be released and the guest will be notified (demo).")
                 .setPositiveButton("Cancel booking", (dialog, which) -> {
-                    booking.status = "CANCELLED";
-                    booking.paid = false;
-                    for (Models.Room r : DataStore.get().rooms) {
-                        if (r.number.equals(booking.roomNumber) && "RESERVED".equals(r.status)) {
-                            r.status = "AVAILABLE";
-                        }
-                    }
-                    Ui.toast(this, "Booking cancelled");
-                    refresh();
+                    DataStore.get().cancelBooking(booking.id, () -> {
+                        Ui.toast(this, "Booking cancelled");
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Keep booking", null)
                 .show();

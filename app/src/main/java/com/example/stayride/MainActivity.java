@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import com.example.stayride.data.ApiClient;
 import com.example.stayride.data.DataStore;
 import com.example.stayride.databinding.ActivityMainBinding;
 import com.example.stayride.fragment.CabsFragment;
@@ -21,9 +22,11 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ApiClient.init(getApplicationContext());
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        DataStore.get().sync(null);
         binding.bottomNav.setOnItemSelectedListener(this::onTabSelected);
         if (savedInstanceState == null) {
             binding.bottomNav.setSelectedItemId(R.id.nav_home);

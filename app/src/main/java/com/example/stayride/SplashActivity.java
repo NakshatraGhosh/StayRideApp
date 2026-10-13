@@ -11,6 +11,7 @@ import android.view.animation.OvershootInterpolator;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.stayride.data.ApiClient;
 import com.example.stayride.databinding.ActivitySplashBinding;
 
 public class SplashActivity extends AppCompatActivity {
@@ -26,6 +27,7 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ApiClient.init(getApplicationContext());
         b = ActivitySplashBinding.inflate(getLayoutInflater());
         setContentView(b.getRoot());
 
@@ -99,7 +101,8 @@ public class SplashActivity extends AppCompatActivity {
     private void goNext() {
         if (navigated || isFinishing()) return;
         navigated = true;
-        startActivity(new Intent(this, MainActivity.class));
+        boolean loggedIn = ApiClient.get() != null && ApiClient.get().isLoggedIn();
+        startActivity(new Intent(this, loggedIn ? MainActivity.class : LoginActivity.class));
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         finish();
     }

@@ -119,10 +119,11 @@ public class RoomsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         if (roomsTab) {
             List<Models.Room> rooms = new ArrayList<>();
@@ -235,19 +236,18 @@ public class RoomsFragment extends Fragment {
         String note = bind.editNote.getText() == null ? "" : bind.editNote.getText().toString().trim();
         String status = selectedStatus(bind);
         if (existing == null) {
-            Models.Room room = new Models.Room(d.nextRoomId++, number, type, floor, price, status, note);
-            d.rooms.add(room);
-            Ui.toast(requireContext(), "Room " + number + " added");
+            d.createRoom(number, type, floor, price, status, note, () -> {
+                if (b == null) return;
+                Ui.toast(requireContext(), "Room " + number + " added");
+                refresh();
+            });
         } else {
-            existing.number = number;
-            existing.type = type;
-            existing.floor = floor;
-            existing.price = price;
-            existing.status = status;
-            existing.note = note;
-            Ui.toast(requireContext(), "Room " + number + " updated");
+            d.updateRoom(existing.id, number, type, floor, price, status, note, () -> {
+                if (b == null) return;
+                Ui.toast(requireContext(), "Room " + number + " updated");
+                refresh();
+            });
         }
-        refresh();
         return true;
     }
 
@@ -256,9 +256,11 @@ public class RoomsFragment extends Fragment {
                 .setTitle("Delete room " + room.number + "?")
                 .setMessage("This removes the room from your homestay. Existing bookings keep their history.")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    DataStore.get().rooms.remove(room);
-                    Ui.toast(requireContext(), "Room deleted");
-                    refresh();
+                    DataStore.get().deleteRoom(room.id, () -> {
+                        if (b == null) return;
+                        Ui.toast(requireContext(), "Room deleted");
+                        refresh();
+                    });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

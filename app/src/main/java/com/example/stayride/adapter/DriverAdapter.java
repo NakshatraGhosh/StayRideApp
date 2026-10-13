@@ -13,8 +13,10 @@ import com.example.stayride.databinding.ItemDriverBinding;
 import com.example.stayride.util.Ui;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class DriverAdapter extends RecyclerView.Adapter<DriverAdapter.VH> {
 
@@ -26,11 +28,14 @@ public class DriverAdapter extends RecyclerView.Adapter<DriverAdapter.VH> {
         void onDelete(Models.Driver driver);
 
         void onActiveChanged(Models.Driver driver, boolean active);
+
+        void onBook(Models.Driver driver);
     }
 
     private final List<Models.Driver> items = new ArrayList<>();
     private final boolean ownerMode;
     private Listener listener;
+    private Map<Integer, Double> distances = new HashMap<>();
 
     public DriverAdapter(boolean ownerMode) {
         this.ownerMode = ownerMode;
@@ -43,6 +48,12 @@ public class DriverAdapter extends RecyclerView.Adapter<DriverAdapter.VH> {
     public void submit(List<Models.Driver> data) {
         items.clear();
         items.addAll(data);
+        distances = new HashMap<>();
+        notifyDataSetChanged();
+    }
+
+    public void setDistances(Map<Integer, Double> data) {
+        distances = data == null ? new HashMap<>() : data;
         notifyDataSetChanged();
     }
 
@@ -65,6 +76,14 @@ public class DriverAdapter extends RecyclerView.Adapter<DriverAdapter.VH> {
             trips.append(d.trips.get(i));
         }
         holder.b.trips.setText(trips.toString());
+
+        Double dist = distances.get(d.id);
+        if (dist != null) {
+            holder.b.distance.setVisibility(View.VISIBLE);
+            holder.b.distance.setText(String.format(Locale.getDefault(), "%.1f km away", dist));
+        } else {
+            holder.b.distance.setVisibility(View.GONE);
+        }
 
         if (d.available && d.active) {
             Ui.pill(holder.b.status, "AVAILABLE", R.color.status_green_bg, R.color.status_green);
@@ -94,6 +113,10 @@ public class DriverAdapter extends RecyclerView.Adapter<DriverAdapter.VH> {
             holder.b.btnEdit.setVisibility(View.GONE);
             holder.b.btnDelete.setVisibility(View.GONE);
         }
+
+        holder.b.btnBook.setOnClickListener(v -> {
+            if (listener != null) listener.onBook(d);
+        });
 
         holder.b.card.setOnClickListener(v -> {
             if (listener != null) listener.onDriverClick(d);

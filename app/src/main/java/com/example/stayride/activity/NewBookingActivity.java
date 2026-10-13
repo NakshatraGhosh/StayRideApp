@@ -181,37 +181,15 @@ public class NewBookingActivity extends BaseActivity {
             count = 1;
         }
 
-        DataStore store = DataStore.get();
-        if (guest == null) {
-            guest = new Models.Guest(store.nextGuestId++, name, phone, "");
-            guest.lastVisit = Dates.today();
-            guest.firstVisit = Dates.today();
-            guest.visits = 0;
-            store.guests.add(guest);
-            Ui.toast(this, name + " added to guest database");
-        } else if (!phone.isEmpty() && !phone.equals(guest.phone)) {
-            guest.phone = phone;
-        }
-
-        Models.Booking booking = new Models.Booking(store.nextBookingId++, guest.id, guest.name, guest.phone);
-        booking.checkIn = checkIn;
-        booking.checkOut = checkOut;
-        booking.roomNumber = selectedRoom.number;
-        booking.guests = Math.max(1, count);
-        booking.status = "CONFIRMED";
-        booking.paid = b.paidCheck.isChecked();
-        booking.amount = amount;
+        Integer guestId = guest == null ? null : guest.id;
         String source = b.sourcePicker.getText() == null ? "Walk-in" : b.sourcePicker.getText().toString();
-        booking.source = source.isEmpty() ? "Walk-in" : source;
-        store.bookings.add(booking);
-        guest.bookingIds.add(booking.id);
+        if (source.isEmpty()) source = "Walk-in";
 
-        if ("AVAILABLE".equals(selectedRoom.status)) {
-            selectedRoom.status = "RESERVED";
-        }
-
-        Ui.toast(this, "Booking created for " + guest.name + " \u00B7 Room " + selectedRoom.number);
-        finish();
+        DataStore.get().createBooking(guestId, name, phone, "", selectedRoom.number, checkIn, checkOut,
+                Math.max(1, count), amount, source, () -> {
+                    Ui.toast(this, "Booking created for " + name + " \u00B7 Room " + selectedRoom.number);
+                    finish();
+                });
     }
 
     private String text(CharSequence cs) {

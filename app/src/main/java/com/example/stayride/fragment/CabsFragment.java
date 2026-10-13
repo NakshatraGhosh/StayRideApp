@@ -73,10 +73,11 @@ public class CabsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         List<Models.CabTrip> list;
         if (requestsTab) {
@@ -108,23 +109,19 @@ public class CabsFragment extends Fragment {
         String[] types = {"SUV", "Sedan", "7-seater", "9-seater"};
         Random r = new Random();
         String[] route = routes[r.nextInt(routes.length)];
+        final String guestName = names[r.nextInt(names.length)];
+        final String phone = "+91 9" + (700000000 + r.nextInt(99999999));
+        final String time = (7 + r.nextInt(11)) + ":" + (r.nextInt(2) == 0 ? "00" : "30") + " AM";
+        final int passengers = 2 + r.nextInt(7);
+        final String vehicleType = types[r.nextInt(types.length)];
+        final long date = Dates.plusDays(r.nextInt(5) + 1);
 
-        DataStore d = DataStore.get();
-        Models.CabTrip trip = new Models.CabTrip(d.nextTripId++);
-        trip.guestName = names[r.nextInt(names.length)];
-        trip.phone = "+91 9" + (700000000 + r.nextInt(99999999));
-        trip.pickup = route[0];
-        trip.destination = route[1];
-        trip.date = Dates.plusDays(r.nextInt(5) + 1);
-        trip.time = (7 + r.nextInt(11)) + ":" + (r.nextInt(2) == 0 ? "00" : "30") + " AM";
-        trip.passengers = 2 + r.nextInt(7);
-        trip.vehicleType = types[r.nextInt(types.length)];
-        trip.estFare = (1800 + r.nextInt(30) * 100);
-        trip.status = "NEW_REQUEST";
-        d.trips.add(trip);
-
-        Ui.toast(requireContext(), "New cab request from " + trip.guestName);
-        refresh();
+        DataStore.get().createTrip(guestName, phone, route[0], route[1], date, time, passengers,
+                vehicleType, () -> {
+                    if (b == null) return;
+                    Ui.toast(requireContext(), "New cab request from " + guestName);
+                    refresh();
+                });
     }
 
     @Override

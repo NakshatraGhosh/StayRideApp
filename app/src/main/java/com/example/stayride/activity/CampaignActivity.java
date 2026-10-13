@@ -48,10 +48,11 @@ public class CampaignActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        refresh();
+        DataStore.get().sync(this::refresh);
     }
 
     private void refresh() {
+        if (b == null) return;
         DataStore d = DataStore.get();
         adapter.submit(d.campaigns);
         int consent = 0;
@@ -94,25 +95,9 @@ public class CampaignActivity extends BaseActivity {
     }
 
     private void startSending(Models.Campaign c) {
-        c.status = "SENDING";
-        c.sent = 0;
-        c.failed = 0;
-        refresh();
-        sendStep(c);
-    }
-
-    private void sendStep(Models.Campaign c) {
-        Sim.delay(450, () -> {
-            if (isFinishing() || isDestroyed()) return;
-            int done = c.sent + c.failed;
-            if ((done + 1) % 5 == 0) c.failed++;
-            else c.sent++;
-            if (c.sent + c.failed >= c.recipients) {
-                c.status = "COMPLETED";
-                Ui.toast(this, "Campaign completed \u2014 " + c.sent + " delivered");
-            } else {
-                sendStep(c);
-            }
+        DataStore.get().sendCampaign(c.id, () -> {
+            if (b == null) return;
+            Ui.toast(this, "Campaign sent to " + c.recipients + " guests");
             refresh();
         });
     }
@@ -170,17 +155,11 @@ public class CampaignActivity extends BaseActivity {
         String audience = f.editAudience.getText() == null
                 ? AUDIENCES[0] : f.editAudience.getText().toString();
 
-        DataStore d = DataStore.get();
-        Models.Campaign c = new Models.Campaign(d.nextCampaignId++);
-        c.title = title;
-        c.message = message;
-        c.audience = audience;
-        c.recipients = d.newCampaignRecipients(audience);
-        c.status = "CREATED";
-        c.createdOn = Dates.today();
-        d.campaigns.add(0, c);
-        Ui.toast(this, "Campaign created \u2014 tap it to start sending");
-        refresh();
+        DataStore.get().createCampaign(title, message, audience, () -> {
+            if (b == null) return;
+            Ui.toast(this, "Campaign created \u2014 tap it to start sending");
+            refresh();
+        });
     }
 
     private String text(CharSequence cs) {
